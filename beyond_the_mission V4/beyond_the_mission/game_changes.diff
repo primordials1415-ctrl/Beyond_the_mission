@@ -1,0 +1,66 @@
+--- "/tmp/claude-0/orig/beyond_the_mission V3/beyond_the_mission/game.py"	2026-11-14 12:37:56.000000000 +0800
++++ game.py	2026-11-14 20:20:50.600051220 +0800
+@@ -11,6 +11,7 @@
+ from interaction import InteractionSystem
+ from journal import StoryProgress
+ from discovery import EncounterManager, EncounterScene
++from intro import Intro
+ 
+ 
+ class Game:
+@@ -26,7 +27,7 @@
+                        rng.randint(90, 220)) for _ in range(140)]
+         self.menu = ui.Menu("BEYOND THE MISSION", [("Play", "play"), ("Exit", "exit")])
+         self.pause_menu = ui.Menu("PAUSED", [("Resume", "resume"), ("Main Menu", "menu")])
+-        self.state = "menu"      # menu | play | pause | scene
++        self.state = "menu"      # menu | intro | play | pause | scene
+         self.running = True
+         self.time = 0.0
+         self.new_game()
+@@ -45,6 +46,11 @@
+     def start_story(self):
+         self.interaction.start_lines(story_data.INTRO_LINES, on_end=self._intro_done)
+ 
++    def _intro_finished(self):
++        """Cinematic intro ended (or was skipped): begin normal gameplay."""
++        self.state = "play"
++        self.start_story()
++
+     def _intro_done(self):
+         self.progress.signal_detected = True
+ 
+@@ -88,10 +94,12 @@
+             action = self.menu.handle_event(e)
+             if action == "play":
+                 self.new_game()
+-                self.state = "play"
+-                self.start_story()
++                self.intro = Intro(self.world, self.player, self.ghost, self.cam, self._intro_finished)
++                self.state = "intro"
+             elif action == "exit":
+                 self.running = False
++        elif self.state == "intro":
++            self.intro.handle_event(e)
+         elif self.state == "play":
+             if e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:
+                 self.state = "pause"
+@@ -117,6 +125,9 @@
+             self.toast[1] += dt
+             if self.toast[1] > 4:
+                 self.toast = None
++        if self.state == "intro":
++            self.intro.update(dt)
++            return
+         if self.state == "scene":
+             self.scene.update(dt)
+             return
+@@ -184,6 +195,9 @@
+             self.draw_menu_bg()
+             self.menu.draw(self.screen, 90)
+             return
++        if self.state == "intro":
++            self.intro.draw(self.screen)
++            return
+         self.draw_world()
+         if self.state == "scene":
+             self.scene.draw(self.screen)

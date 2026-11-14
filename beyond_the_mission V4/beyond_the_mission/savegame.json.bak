@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "progress": {
+    "capsules": [
+      "ingenuity",
+      "insight"
+    ],
+    "signal": true
+  },
+  "player": [
+    1963.9,
+    1316.5
+  ]
+}
